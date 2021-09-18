@@ -190,7 +190,7 @@ public class Vips {
 		outputFolder += "_";
 		outputFolder += _url.getHost().replaceAll("\\.", "_").replaceAll("/", "_");
 
-		return outputFolder;
+		return "./out/" +outputFolder;
 	}
 
 	/**

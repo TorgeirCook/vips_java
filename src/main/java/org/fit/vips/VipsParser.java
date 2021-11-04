@@ -178,7 +178,7 @@ public class VipsParser {
         for (Box child : childrenTextNodes) {
             String childText = child.getText();
 
-            if (!childText.equals("") && !childText.equals(" ") && !childText.equals("\n"))
+            if (!childText.equals("") && !childText.equals(" "))
                 textLength += childText.length();
         }
 

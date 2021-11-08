@@ -15,6 +15,9 @@ import org.fit.cssbox.io.DocumentSource;
 import org.fit.cssbox.layout.BrowserCanvas;
 import org.fit.cssbox.layout.Viewport;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

@@ -9,6 +9,8 @@ package org.fit.vips;
 import org.fit.cssbox.layout.Box;
 import org.fit.cssbox.layout.ElementBox;
 import org.fit.cssbox.layout.Viewport;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Node;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -20,9 +22,10 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.StringWriter;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Class, that handles output of VIPS algorithm.
@@ -37,6 +40,7 @@ public final class VipsOutput {
     private int _order = 1;
     private String _filename = "VIPSResult";
     private Document domTree;
+    private ArrayList<ArrayList<String>> domIds = new ArrayList<>();
 
     public VipsOutput() {
     }
@@ -132,24 +136,20 @@ public final class VipsOutput {
                 writeVisualBlocks(layoutNode, child);
         } else {
             // "stop" segmentation
+            ArrayList<String> domIds = new ArrayList<>();
             if (visualStructure.getNestedBlocks().size() > 0) {
                 String src = "";
                 String content = "";
-                StringBuilder html = new StringBuilder();
-                StringBuilder domIds = new StringBuilder();
                 for (VipsBlock block : visualStructure.getNestedBlocks()) {
                     ElementBox elementBox = block.getElementBox();
 
                     if (elementBox == null)
                         continue;
-                    String id = elementBox.getElement().getAttribute("Id");
-                    domIds.append(" ").append(id);
-                    StringWriter writer = new StringWriter();
-                    Transformer transformer = TransformerFactory.newInstance().newTransformer();
-                    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-                    transformer.transform(new DOMSource(domTree.getElementById(id)), new StreamResult(writer));
-                    html.append(writer);
 
+                    String id = elementBox.getElement().getAttribute("Id");
+                    if (id.length() != 0) {
+                        domIds.add(id);
+                    }
 
                     if (!elementBox.getNode().getNodeName().equals("Xdiv") &&
                             !elementBox.getNode().getNodeName().equals("Xspan"))
@@ -160,12 +160,16 @@ public final class VipsOutput {
                     content += elementBox.getText() + " ";
 
                 }
-                layoutNode.setAttribute("DOMIds", domIds.toString().trim());
-                layoutNode.setAttribute("HTML", html.toString());
+                layoutNode.setAttribute("DOMIds", Stream.of(domIds)
+                        .map(Object::toString)
+                        .collect(Collectors.joining(",")));
                 layoutNode.setAttribute("SRC", src);
                 layoutNode.setAttribute("Content", content);
             }
 
+            if (domIds.size() > 0) {
+                this.domIds.add(domIds);
+            }
             parentNode.appendChild(layoutNode);
         }
     }
@@ -201,6 +205,8 @@ public final class VipsOutput {
 
             writeVisualBlocks(vipsElement, visualStructure);
 
+            writeToHTMLDoc();
+
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
             transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
@@ -227,6 +233,27 @@ public final class VipsOutput {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private void writeToHTMLDoc() throws TransformerException, IOException {
+        org.jsoup.nodes.Document doc = Jsoup.parse("<html></html>");
+        for (ArrayList<String> domId : domIds) {
+            org.jsoup.nodes.Element div = doc.createElement("div");
+            for (int j = 0; j < domId.size(); j++) {
+                StringWriter writer = new StringWriter();
+                Transformer transformer = TransformerFactory.newInstance().newTransformer();
+                transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+                transformer.transform(new DOMSource(domTree.getElementById(domId.get(j))), new StreamResult(writer));
+                Node node = Jsoup.parse(writer.toString()).body().unwrap();
+                if (node != null) {
+                    div.appendChild(node);
+                }
+            }
+            doc.body().appendChild(div);
+        }
+        BufferedWriter writer = new BufferedWriter(new FileWriter("out.html"));
+        writer.write(doc.html());
+        writer.close();
     }
 
     /**

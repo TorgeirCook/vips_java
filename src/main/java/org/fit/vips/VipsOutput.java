@@ -6,6 +6,7 @@
 
 package org.fit.vips;
 
+import org.fit.cssbox.layout.BlockBox;
 import org.fit.cssbox.layout.Box;
 import org.fit.cssbox.layout.ElementBox;
 import org.fit.cssbox.layout.Viewport;
@@ -24,6 +25,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,7 +42,7 @@ public final class VipsOutput {
     private int _order = 1;
     private String _filename = "VIPSResult";
     private Document domTree;
-    private ArrayList<ArrayList<String>> domIds = new ArrayList<>();
+    private ArrayList<HashSet<String>> domIds = new ArrayList<>();
 
     public VipsOutput() {
     }
@@ -136,7 +138,7 @@ public final class VipsOutput {
                 writeVisualBlocks(layoutNode, child);
         } else {
             // "stop" segmentation
-            ArrayList<String> domIds = new ArrayList<>();
+            HashSet<String> domIds = new HashSet<>();
             if (visualStructure.getNestedBlocks().size() > 0) {
                 String src = "";
                 String content = "";
@@ -147,9 +149,10 @@ public final class VipsOutput {
                         continue;
 
                     String id = elementBox.getElement().getAttribute("Id");
-                    if (id.length() != 0) {
-                        domIds.add(id);
+                    if (elementBox.getNode().getNodeName().equals("Xspan") || elementBox.getNode().getNodeName().equals("Xdiv")) {
+                        id = ((BlockBox) parentBox).getElement().getAttribute("Id");
                     }
+                    domIds.add(id);
 
                     if (!elementBox.getNode().getNodeName().equals("Xdiv") &&
                             !elementBox.getNode().getNodeName().equals("Xspan"))
@@ -237,13 +240,13 @@ public final class VipsOutput {
 
     private void writeToHTMLDoc() throws TransformerException, IOException {
         org.jsoup.nodes.Document doc = Jsoup.parse("<html></html>");
-        for (ArrayList<String> domId : domIds) {
+        for (HashSet<String> domId : domIds) {
             org.jsoup.nodes.Element div = doc.createElement("div");
             for (int j = 0; j < domId.size(); j++) {
                 StringWriter writer = new StringWriter();
                 Transformer transformer = TransformerFactory.newInstance().newTransformer();
                 transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-                transformer.transform(new DOMSource(domTree.getElementById(domId.get(j))), new StreamResult(writer));
+                transformer.transform(new DOMSource(domTree.getElementById((String) domId.toArray()[j])), new StreamResult(writer));
                 Node node = Jsoup.parse(writer.toString()).body().unwrap();
                 if (node != null) {
                     div.appendChild(node);

@@ -134,6 +134,7 @@ public class Vips {
                 Node node = nodeList.item(i);
                 if (node.getNodeType() == Node.ELEMENT_NODE) {
                     // do something with the current element
+
                     String id = "vips_id_" + i;
 
                     ((Element) node).setAttribute("Id", id);

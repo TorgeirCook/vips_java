@@ -36,12 +36,14 @@ public final class VipsOutput {
     private int _pDoC = 0;
     private int _order = 1;
     private String _filename = "VIPSResult";
+    private Document domTree;
 
     public VipsOutput() {
     }
 
-    public VipsOutput(int pDoC) {
+    public VipsOutput(int pDoC, Document domTree) {
         this.setPDoC(pDoC);
+        this.setDomTree(domTree);
     }
 
     /**
@@ -72,7 +74,7 @@ public final class VipsOutput {
      * @param parentNode      Given visual structure
      * @param visualStructure Parent node
      */
-    private void writeVisualBlocks(Element parentNode, VisualStructure visualStructure) {
+    private void writeVisualBlocks(Element parentNode, VisualStructure visualStructure) throws TransformerException {
         Element layoutNode = doc.createElement("LayoutNode");
 
         layoutNode.setAttribute("FrameSourceIndex", String.valueOf(visualStructure.getFrameSourceIndex()));
@@ -133,11 +135,21 @@ public final class VipsOutput {
             if (visualStructure.getNestedBlocks().size() > 0) {
                 String src = "";
                 String content = "";
+                StringBuilder html = new StringBuilder();
+                StringBuilder domIds = new StringBuilder();
                 for (VipsBlock block : visualStructure.getNestedBlocks()) {
                     ElementBox elementBox = block.getElementBox();
 
                     if (elementBox == null)
                         continue;
+                    String id = elementBox.getElement().getAttribute("Id");
+                    domIds.append(" ").append(id);
+                    StringWriter writer = new StringWriter();
+                    Transformer transformer = TransformerFactory.newInstance().newTransformer();
+                    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+                    transformer.transform(new DOMSource(domTree.getElementById(id)), new StreamResult(writer));
+                    html.append(writer);
+
 
                     if (!elementBox.getNode().getNodeName().equals("Xdiv") &&
                             !elementBox.getNode().getNodeName().equals("Xspan"))
@@ -148,6 +160,8 @@ public final class VipsOutput {
                     content += elementBox.getText() + " ";
 
                 }
+                layoutNode.setAttribute("DOMIds", domIds.toString().trim());
+                layoutNode.setAttribute("HTML", html.toString());
                 layoutNode.setAttribute("SRC", src);
                 layoutNode.setAttribute("Content", content);
             }
@@ -248,5 +262,9 @@ public final class VipsOutput {
             _filename = filename;
         }
 
+    }
+
+    public void setDomTree(Document domTree) {
+        this.domTree = domTree;
     }
 }

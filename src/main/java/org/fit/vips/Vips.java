@@ -40,11 +40,12 @@ public class Vips {
 
     private boolean _graphicsOutput = false;
     private boolean _outputToFolder = false;
-    private boolean _outputEscaping = true;
+    private boolean _outputEscaping = false;
     private int _pDoC = 11;
     private String _filename = "";
     private int sizeTresholdWidth = 350;
     private int sizeTresholdHeight = 400;
+    private Document domTree;
 
     private PrintStream originalOut = null;
     long startTime = 0;
@@ -124,8 +125,18 @@ public class Vips {
         try {
             docSource = new DefaultDocumentSource(urlStream);
             DOMSource parser = new DefaultDOMSource(docSource);
+            domTree = parser.parse();
+            NodeList nodeList = domTree.getElementsByTagName("*");
+            for (int i = 0; i < nodeList.getLength(); i++) {
+                Node node = nodeList.item(i);
+                if (node.getNodeType() == Node.ELEMENT_NODE) {
+                    // do something with the current element
+                    String id = "vips_id_" + i;
 
-            Document domTree = parser.parse();
+                    ((Element) node).setAttribute("Id", id);
+                    ((Element) node).setIdAttribute("Id", true);
+                }
+            }
             _domAnalyzer = new DOMAnalyzer(domTree, _url);
             _domAnalyzer.attributesToStyles();
             _domAnalyzer.addStyleSheet(null, CSSNorm.stdStyleSheet(), DOMAnalyzer.Origin.AGENT);
@@ -141,7 +152,7 @@ public class Vips {
      */
     private void getViewport() {
         _browserCanvas = new BrowserCanvas(_domAnalyzer.getRoot(),
-                _domAnalyzer, new java.awt.Dimension(1000, 600), _url);
+                _domAnalyzer, new java.awt.Dimension(1920, 1080), _url);
         _viewport = _browserCanvas.getViewport();
     }
 
@@ -264,7 +275,7 @@ public class Vips {
         //		constructor.normalizeSeparatorsSoftMax();
         constructor.normalizeSeparatorsMinMax();
 
-        VipsOutput vipsOutput = new VipsOutput(_pDoC);
+        VipsOutput vipsOutput = new VipsOutput(_pDoC, domTree);
         vipsOutput.setEscapeOutput(_outputEscaping);
         vipsOutput.setOutputFileName(_filename);
         vipsOutput.writeXML(constructor.getVisualStructure(), _viewport);

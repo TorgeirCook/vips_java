@@ -148,9 +148,9 @@ public final class VipsOutput {
                     if (elementBox == null)
                         continue;
 
-                    String id = elementBox.getElement().getAttribute("Id");
+                    String id = elementBox.getElement().getAttribute(Vips.vipsIdDomAttribute);
                     if (elementBox.getNode().getNodeName().equals("Xspan") || elementBox.getNode().getNodeName().equals("Xdiv")) {
-                        id = ((BlockBox) parentBox).getElement().getAttribute("Id");
+                        id = ((BlockBox) parentBox).getElement().getAttribute(Vips.vipsIdDomAttribute);
                     }
                     domIds.add(id);
 
@@ -240,6 +240,7 @@ public final class VipsOutput {
 
     private void writeToHTMLDoc() throws TransformerException, IOException {
         org.jsoup.nodes.Document doc = Jsoup.parse("<html></html>");
+        doc.head().append("<meta charset=\"utf-8\"/>");
         for (HashSet<String> domId : domIds) {
             org.jsoup.nodes.Element div = doc.createElement("div");
             for (int j = 0; j < domId.size(); j++) {
@@ -249,6 +250,10 @@ public final class VipsOutput {
                 transformer.transform(new DOMSource(domTree.getElementById((String) domId.toArray()[j])), new StreamResult(writer));
                 Node node = Jsoup.parse(writer.toString()).body().unwrap();
                 if (node != null) {
+                    node.removeAttr(Vips.vipsIdDomAttribute);
+                    for (Node childNode : node.childNodes()) {
+                        childNode.removeAttr(Vips.vipsIdDomAttribute);
+                    }
                     div.appendChild(node);
                 }
             }

@@ -50,6 +50,7 @@ public class Vips {
     private int sizeTresholdHeight = 400;
     private Document domTree;
 
+    public static String vipsIdDomAttribute = "vips_id";
     private PrintStream originalOut = null;
     long startTime = 0;
     long endTime = 0;
@@ -137,8 +138,8 @@ public class Vips {
 
                     String id = "vips_id_" + i;
 
-                    ((Element) node).setAttribute("Id", id);
-                    ((Element) node).setIdAttribute("Id", true);
+                    ((Element) node).setAttribute(vipsIdDomAttribute, id);
+                    ((Element) node).setIdAttribute(vipsIdDomAttribute, true);
                 }
             }
             _domAnalyzer = new DOMAnalyzer(domTree, _url);
